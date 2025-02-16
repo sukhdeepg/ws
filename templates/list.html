@@ -226,7 +226,6 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
         }
 
-        /* Add this new style for the text inside badge */
         .type-badge span {
             position: relative;
             z-index: 1;
@@ -244,7 +243,6 @@
             background: var(--hover-bg);
         }
 
-        /* Make the row border color match the badge color */
         .content-row:has(.type-blog):hover { border-left-color: var(--border-blog); }
         .content-row:has(.type-video):hover { border-left-color: var(--border-video); }
         .content-row:has(.type-tweet):hover { border-left-color: var(--border-tweet); }
@@ -259,6 +257,7 @@
         .expand-icon {
             font-size: 0.8rem;
             transition: transform 0.3s ease;
+            cursor: pointer;
         }
 
         .content-row.active .expand-icon {
@@ -282,7 +281,6 @@
             color: var(--text-secondary);
         }
 
-        /* Update underline colors based on content type */
         .type-blog ~ td .content-link a:after {
             background: var(--border-blog);
         }
@@ -318,18 +316,28 @@
             color: var(--text-secondary);
             font-style: italic;
             font-weight: 400;
-            max-height: none;
+            max-height: 0;
             overflow: hidden;
-            transition: max-height 0.2s cubic-bezier(0, 1, 0, 1);
             margin: 0;
             padding: 0;
             line-height: 1.5;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: 
+                max-height 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.2s ease,
+                transform 0.2s ease;
         }
 
         .summary.active {
-            max-height: none;
-            transition: max-height 0.3s cubic-bezier(0.4, 0, 1, 1);
+            max-height: 1000px;
             margin-top: 0.5rem;
+            opacity: 1;
+            transform: translateY(0);
+            transition: 
+                max-height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.3s ease 0.1s,
+                transform 0.3s ease 0.1s;
         }
     </style>
 </head>
@@ -338,7 +346,6 @@
     <div id="content-container"></div>
 
     <script>
-        // Convert markdown content to structured HTML
         const content = `{{ content }}`;
         const container = document.getElementById('content-container');
         
@@ -385,7 +392,7 @@
             sectionDiv.appendChild(contentDiv);
             container.appendChild(sectionDiv);
             
-            // Add click handler
+            // Add click handler for section headers
             header.addEventListener('click', () => {
                 contentDiv.classList.toggle('active');
                 header.classList.toggle('active');
@@ -399,9 +406,6 @@
             const linkMatch = item[0].match(/\[(.*?)\]\((.*?)\)/);
             const summary = item[1] ? item[1].replace('>', '').trim() : '';
 
-            // Convert marked to HTML for the summary
-            const summaryHtml = marked.parse(summary); // Use markdown.js to convert
-
             if (typeMatch && linkMatch) {
                 const type = typeMatch[1].toLowerCase();
                 row.innerHTML = `
@@ -413,22 +417,28 @@
                             <a href="${linkMatch[2]}" target="_blank">${linkMatch[1]}</a>
                             ${summary ? '<span class="expand-icon">▼</span>' : ''}
                         </div>
-                        <div class="summary">${summaryHtml}</div>
+                        ${summary ? `<div class="summary">${marked.parse(summary)}</div>` : ''}
                     </td>
                 `;
 
-                // Add click handler for summary toggle
-                row.addEventListener('click', (e) => {
-                    // Prevent toggling if clicking the link
-                    if (e.target.tagName === 'A') return;
-
+                if (summary) {
+                    const expandIcon = row.querySelector('.expand-icon');
                     const summaryDiv = row.querySelector('.summary');
+                    
+                    expandIcon.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent row click event
+                        row.classList.toggle('active');
+                    summaryDiv.classList.toggle('active');
                     summaryDiv.classList.toggle('active');
                     row.classList.toggle('active');
-                });
+                        summaryDiv.classList.toggle('active');
+                    row.classList.toggle('active');
+                    });
+                }
             }
         }
         
+        // Open the most recent section by default
         // Open the most recent section by default
         if (container.firstChild) {
             container.firstChild.querySelector('.date-content').classList.add('active');
