@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>What I Found Interesting</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+    <link href="https://ai-public.creatie.ai/gen_page/tailwind-custom.css" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com/3.4.5?plugins=forms@0.5.7,typography@0.5.13,aspect-ratio@0.4.2,container-queries@0.1.1"></script>
+    <script src="https://ai-public.creatie.ai/gen_page/tailwind-config.min.js" data-color="#000000" data-border-radius="medium"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.0.2/marked.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⌨️</text></svg>">
+    <style>
+        select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5em 1.5em;
+        }
+
+        .content {
+            transition: all 0.3s ease;
+            max-height: 0;
+            overflow: hidden;
+            opacity: 0;
+        }
+
+        .content.active {
+            max-height: 1000px;
+            opacity: 1;
+            margin-top: 1rem;
+        }
+
+        .content:not(.hidden) {
+            display: block;
+        }
+
+        /* Add styles for markdown content */
+        .prose {
+            color: #4b5563;
+            line-height: 1.6;
+        }
+
+        .prose p {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .prose strong {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        .expand-icon {
+            display: inline-block;
+            color: #6b7280;
+            transition: transform 0.2s ease;
+            cursor: pointer;
+        }
+
+        .summary {
+            transition: all 0.3s ease;
+        }
+
+        .type-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .toggle-content {
+            transition: all 0.3s ease;
+        }
+
+        i {
+            display: inline-block;
+            transition: transform 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-['Space_Grotesk']">
+    <!-- Navbar -->
+    <nav class="border-b border-gray-800 bg-[rgb(17,24,39)]">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex items-center h-10">
+                <a href="/" class="text-gray-300 hover:text-white transition-colors duration-200 flex items-center px-4 h-full hover:bg-gray-800">
+                    <i class="fas fa-arrow-left text-sm"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <header class="mb-12 text-center">
+            <h1 class="text-xl font-medium text-gray-500 mb-4">What I Found Insightful</h1>
+        </header>
+
+        <div class="sticky top-0 bg-gray-50 z-10 py-4 mb-8">
+            <div class="flex flex-col sm:flex-row gap-4 items-center">
+                <div class="relative flex-grow">
+                    <input type="text" id="searchInput" placeholder="Search articles..." class="w-full pl-10 pr-4 py-2 border border-gray-200 !rounded-button focus:ring-2 focus:ring-custom focus:border-custom"/>
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+                <div class="flex gap-4">
+                    <select id="typeFilter" class="appearance-none border border-gray-200 rounded-lg py-2 px-4 pr-8 bg-white focus:ring-2 focus:ring-custom focus:border-custom min-w-[140px] relative">
+                        <option value="all">All Types</option>
+                        <option value="blog">Blog</option>
+                        <option value="video">Video</option>
+                        <option value="tweet">Tweet</option>
+                        <option value="post">Post</option>
+                    </select>
+                    <select id="sortOrder" class="appearance-none border border-gray-200 rounded-lg py-2 px-4 pr-8 bg-white focus:ring-2 focus:ring-custom focus:border-custom min-w-[140px] relative">
+                        <option value="latest">Latest First</option>
+                        <option value="oldest">Oldest First</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-container" class="grid gap-6">
+            <!-- Content will be dynamically inserted here -->
+        </div>
+    </div>
+
+    <script>
+        function createArticle(date, type, title, link, summary, company) {
+            const tagColor = type.toLowerCase() === 'blog' ? 'bg-purple-100 text-purple-800' : 'bg-custom/10 text-custom';
+            const companyTagColor = getCompanyColor(company);
+            
+            return `
+                <article class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center">
+                            <time class="text-sm text-gray-500">${date}</time>
+                            <span class="ml-3 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tagColor}">${type}</span>
+                            ${company ? `<span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${companyTagColor}">${company}</span>` : ''}
+                        </div>
+                        ${summary ? `
+                            <button onclick="toggleContent(this)" class="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-900">
+                        <a href="${link}" target="_blank" class="hover:text-custom transition-colors">${title}</a>
+                    </h2>
+                    ${summary ? `
+                        <div class="toggle-content hidden mt-4 pt-4 border-t border-gray-100">
+                            <div class="prose prose-sm max-w-none">
+                                ${marked.parse(summary)}
+                            </div>
+                        </div>
+                    ` : ''}
+                </article>
+            `;
+        }
+
+        function toggleContent(button) {
+            const content = button.closest('article').querySelector('.toggle-content');
+            const icon = button.querySelector('i');
+            
+            content.classList.toggle('hidden');
+            icon.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        // Update the fetchContent function
+        async function fetchContent() {
+            try {
+                const response = await fetch('https://api.github.com/repos/sukhdeepg/reading-list/contents/README.md');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+                const mdContent = atob(data.content);
+                
+                const container = document.getElementById('content-container');
+                container.innerHTML = ''; // Clear existing content
+                
+                const sections = mdContent.split('##').slice(1);
+                
+                sections.forEach(section => {
+                    if (!section.trim()) return;
+                    
+                    const [date, ...items] = section.trim().split('\n').filter(line => line.trim());
+                    
+                    items.forEach(item => {
+                        if (item.trim().startsWith('-')) {
+                            const typeMatch = item.match(/\*\*(.*?)\*\*/);
+                            const linkMatch = item.match(/\[(.*?)\]\((.*?)\)/);
+                            let summary = '';
+                            
+                            // Get all items that belong to this entry
+                            const itemIndex = items.indexOf(item);
+                            const nextItemIndex = items.findIndex((item, index) => index > itemIndex && item.trim().startsWith('-'));
+                            const itemLines = items.slice(itemIndex, nextItemIndex === -1 ? undefined : nextItemIndex);
+                            
+                            // Extract summary from subsequent lines
+                            if (itemLines.length > 1) {
+                                summary = itemLines.slice(1)
+                                    .map(line => line.trim())
+                                    .filter(line => line)
+                                    .map(line => line.replace(/^[>\s&gt;]+/, '').trim())
+                                    .join('\n');
+                            }
+
+                            if (typeMatch && linkMatch) {
+                                const type = typeMatch[1];
+                                const title = linkMatch[1];
+                                const link = linkMatch[2];
+                                
+                                // Extract company from URL and clean it up
+                                const urlObj = new URL(link);
+                                let company = null;
+                                
+                                if (urlObj.hostname.includes('engineering.fb.com')) company = 'Meta';
+                                else if (urlObj.hostname.includes('netflixtechblog.com')) company = 'Netflix';
+                                else if (urlObj.hostname.includes('uber.com')) company = 'Uber';
+                                else if (urlObj.hostname.includes('fs.blog')) company = 'Farnam Street';
+                                else if (urlObj.hostname.includes('deepmind.com')) company = 'DeepMind';
+                                
+                                // Clean up the title by removing any markdown artifacts and decoding HTML entities
+                                const cleanTitle = decodeURIComponent(title)
+                                    .replace(/\*\*/g, '')  // Remove **
+                                    .replace(/\[|\]/g, '')  // Remove [ ]
+                                    .replace(/&#39;/g, "'") // Replace HTML entity for apostrophe
+                                    .replace(/&quot;/g, '"') // Replace HTML entity for quote
+                                    .replace(/&amp;/g, '&') // Replace HTML entity for ampersand
+                                    .replace(/â/g, "'") // Replace wrong apostrophe
+                                    .replace(/^[^:]+:\s*/, '') // Remove "Company: " prefix from title
+                                    .trim();
+                                
+                                container.innerHTML += createArticle(
+                                    date.trim(),
+                                    type.trim(),
+                                    cleanTitle,
+                                    link,
+                                    summary,
+                                    company
+                                );
+                            }
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error('Error loading content:', error);
+                const container = document.getElementById('content-container');
+                container.innerHTML = `<div class="text-red-600">Error loading content: ${error.message}</div>`;
+            }
+        }
+
+        // Call fetchContent when the page loads
+        document.addEventListener('DOMContentLoaded', fetchContent);
+
+        // Add search functionality
+        document.getElementById('searchInput').addEventListener('input', filterContent);
+        document.getElementById('typeFilter').addEventListener('change', filterContent);
+        document.getElementById('sortOrder').addEventListener('change', filterContent);
+
+        function filterContent() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const typeFilter = document.getElementById('typeFilter').value.toLowerCase();
+            const sortOrder = document.getElementById('sortOrder').value;
+
+            const container = document.getElementById('content-container');
+            const articles = Array.from(container.getElementsByTagName('article'));
+
+            articles.forEach(article => {
+                const title = article.querySelector('h2 a').textContent.toLowerCase();
+                // Get all tags and find the type (Blog) and company tags
+                const tags = Array.from(article.querySelectorAll('.rounded-full'));
+                const typeTag = tags.find(tag => tag.textContent.toLowerCase() === 'blog' || tag.textContent.toLowerCase() === 'video' || tag.textContent.toLowerCase() === 'tweet' || tag.textContent.toLowerCase() === 'post');
+                const companyTag = tags.find(tag => tag.textContent !== typeTag.textContent);
+                
+                const type = typeTag.textContent.toLowerCase();
+                const company = companyTag ? companyTag.textContent.toLowerCase() : '';
+                
+                const matchesSearch = title.includes(searchTerm) || company.includes(searchTerm);
+                const matchesType = typeFilter === 'all' || type === typeFilter;
+                
+                article.style.display = matchesSearch && matchesType ? 'block' : 'none';
+            });
+
+            // Sort articles
+            const sortedArticles = articles.sort((a, b) => {
+                const dateA = new Date(a.querySelector('time').textContent);
+                const dateB = new Date(b.querySelector('time').textContent);
+                return sortOrder === 'latest' ? dateB - dateA : dateA - dateB;
+            });
+
+            // Reorder articles in the DOM
+            sortedArticles.forEach(article => {
+                if (article.style.display !== 'none') {
+                    container.appendChild(article);
+                }
+            });
+        }
+
+        // Add these helper functions
+        function getCompanyColor(company) {
+            // Keep the color map
+            const colors = {
+                'Meta': 'bg-blue-100 text-blue-800',
+                'Netflix': 'bg-red-100 text-red-800',
+                'Uber': 'bg-green-100 text-green-800',
+                'Discord': 'bg-indigo-100 text-indigo-800',
+                'DoorDash': 'bg-orange-100 text-orange-800',
+                'Dropbox': 'bg-cyan-100 text-cyan-800',
+                'Slack': 'bg-yellow-100 text-yellow-800',
+                'LinkedIn': 'bg-sky-100 text-sky-800',
+                'Farnam Street': 'bg-emerald-100 text-emerald-800'
+            };
+            
+            return colors[company] || 'bg-zinc-100 text-zinc-800'; // Default color for unknown companies
+        }
+    </script>
+</body>
+</html> 
